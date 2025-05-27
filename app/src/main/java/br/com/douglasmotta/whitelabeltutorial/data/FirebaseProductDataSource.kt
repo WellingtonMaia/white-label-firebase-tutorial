@@ -5,14 +5,19 @@ import br.com.douglasmotta.whitelabeltutorial.BuildConfig
 import br.com.douglasmotta.whitelabeltutorial.domain.model.Product
 import br.com.douglasmotta.whitelabeltutorial.util.COLLECTION_PRODUCTS
 import br.com.douglasmotta.whitelabeltutorial.util.COLLECTION_ROOT
+import br.com.douglasmotta.whitelabeltutorial.util.STORAGE_IMAGES
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import java.util.UUID
 import kotlin.coroutines.suspendCoroutine
 
 class FirebaseProductDataSource(
     firebaseFirestore: FirebaseFirestore,
     firebaseStorage: FirebaseStorage
 ) : ProductDataSource {
+
+    // data/car/products/timestamp/ProductA
+    // data/bike/products/timestamp/ProductB
 
     private val documentReference = firebaseFirestore
         .document("$COLLECTION_ROOT/${BuildConfig.FIREBASE_FLAVOR_COLLECTION}")
@@ -41,10 +46,40 @@ class FirebaseProductDataSource(
     }
 
     override suspend fun uploadProductImage(imageUri: Uri): String {
-        TODO("Not yet implemented")
+        return suspendCoroutine { continuation ->
+            val randomKey = UUID.randomUUID().toString()
+            // images/car/{randomkey}
+            val childReference = storageReference.child(
+                "$STORAGE_IMAGES/${BuildConfig.FIREBASE_FLAVOR_COLLECTION}/$randomKey"
+            )
+
+            fun handleException (exception: Exception) =
+                continuation.resumeWith(Result.failure(exception))
+
+            childReference.putFile(imageUri)
+                .addOnSuccessListener { taskSnapshot ->
+                    taskSnapshot.storage.downloadUrl
+                        .addOnSuccessListener { uri ->
+                            val path: String = uri.toString()
+                            continuation.resumeWith(Result.success(path))
+                        }.addOnFailureListener { exception -> handleException(exception) }
+
+                }.addOnFailureListener { exception -> handleException(exception) }
+        }
     }
 
     override suspend fun createProduct(product: Product): Product {
-        TODO("Not yet implemented")
+
+        return suspendCoroutine { continuation ->
+            documentReference
+                .collection(COLLECTION_PRODUCTS)
+                .document(System.currentTimeMillis().toString())
+                .set(product)
+                .addOnSuccessListener {
+                    continuation.resumeWith(Result.success(product))
+                }.addOnFailureListener { exception ->
+                    continuation.resumeWith(Result.failure(exception))
+                }
+        }
     }
 }
