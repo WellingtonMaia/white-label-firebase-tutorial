@@ -32,12 +32,12 @@ class FirebaseProductDataSource @Inject constructor(
             productsReference.get().addOnSuccessListener { documents ->
                 val products = mutableListOf<Product>()
                 for (document in documents) {
-                    document.toObject(Product::class.java)?.run {
+                    document.toObject(Product::class.java).run {
                         products.add(this)
                     }
-
-                    continuation.resumeWith(Result.success(products))
                 }
+
+                continuation.resumeWith(Result.success(products))
             }
 
             productsReference.get().addOnFailureListener { exception ->

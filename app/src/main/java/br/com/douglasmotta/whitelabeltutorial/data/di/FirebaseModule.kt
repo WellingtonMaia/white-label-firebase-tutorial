@@ -1,5 +1,7 @@
 package br.com.douglasmotta.whitelabeltutorial.data.di
 
+import com.google.firebase.Firebase
+import com.google.firebase.app
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import dagger.Module

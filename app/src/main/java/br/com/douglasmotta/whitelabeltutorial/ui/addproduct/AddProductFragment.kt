@@ -1,18 +1,17 @@
-package br.com.douglasmotta.whitelabeltutorial.ui.products.addproduct
+package br.com.douglasmotta.whitelabeltutorial.ui.addproduct
 
 import android.net.Uri
 import androidx.fragment.app.viewModels
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
-import br.com.douglasmotta.whitelabeltutorial.R
+import androidx.navigation.fragment.findNavController
 import br.com.douglasmotta.whitelabeltutorial.databinding.FragmentAddProductBinding
 import br.com.douglasmotta.whitelabeltutorial.util.CurrencyTextWatcher
+import br.com.douglasmotta.whitelabeltutorial.util.PRODUCT_KEY
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -33,12 +32,6 @@ class AddProductFragment : BottomSheetDialogFragment() {
             binding.imageProduct.setImageURI(uri)
         }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        // TODO: Use the ViewModel
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -52,21 +45,34 @@ class AddProductFragment : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setListener()
+
+        observeVMEvent()
     }
 
     private fun observeVMEvent() {
-        viewModel.imageUriErrorResId.observe(viewLifecycleOwner, { drawableResId ->
+        viewModel.imageUriErrorResId.observe(viewLifecycleOwner) { drawableResId ->
             binding.imageProduct.setBackgroundResource(drawableResId)
+        }
 
-        })
-
-        viewModel.descriptionFieldErrorResId.observe(viewLifecycleOwner, { stringResId ->
+        viewModel.descriptionFieldErrorResId.observe(viewLifecycleOwner) { stringResId ->
             binding.inputLayoutDescription.setError(stringResId)
-        })
+        }
 
-        viewModel.priceFieldErrorResId.observe(viewLifecycleOwner, {stringResId ->
+        viewModel.priceFieldErrorResId.observe(viewLifecycleOwner) {stringResId ->
             binding.inputLayoutPrice.setError(stringResId)
-        })
+        }
+
+        viewModel.productCreated.observe(viewLifecycleOwner) { product ->
+            findNavController().run {
+                previousBackStackEntry?.savedStateHandle?.set(PRODUCT_KEY, product)
+                popBackStack()
+            }
+        }
+
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            binding.progressIndicator.visibility = if (isLoading) View.VISIBLE else View.GONE
+            binding.buttonAddProduct.isEnabled = !isLoading
+        }
     }
 
     private fun TextInputLayout.setError(stringResId: Int?) {
